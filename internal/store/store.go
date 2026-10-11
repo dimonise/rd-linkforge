@@ -35,10 +35,12 @@ func Get(store Store, id uint64) (link.Link, bool) {
 }
 
 func All(store Store) []link.Link {
-	result := make([]link.Link, 0, len(store.byID))
+	result := make([]link.Link, len(store.byID))
 
+	i := 0
 	for _, l := range store.byID {
-		result = append(result, l)
+		result[i] = l
+		i++
 	}
 
 	sort.Slice(result, func(i, j int) bool {
