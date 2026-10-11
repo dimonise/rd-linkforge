@@ -17,8 +17,8 @@ var (
 // то цикл пройдет несколько раз, собираем в слайс и разворачиваем его в конце,
 // чтобы получить правильный порядок символов
 func Encode(val uint64) string {
-	if val == 0 {
-		return "0"
+	if val < 62 {
+		return string(alphabet[val])
 	}
 
 	var result []byte
