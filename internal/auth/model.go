@@ -2,33 +2,15 @@
 // verifying access tokens.
 package auth
 
-import "time"
-
-// User is an account that owns links. PasswordHash is never serialised onto a
-// transport.
-type User struct {
-	ID           string
-	Email        string
-	PasswordHash string
-	CreatedAt    time.Time
-}
+// User is an account that owns links. Its password hash is never serialised
+// onto a transport.
+type User struct{}
 
 // Credentials is a login attempt.
-type Credentials struct {
-	Email    string
-	Password string
-}
+type Credentials struct{}
 
 // Claims is the verified content of an access token.
-type Claims struct {
-	UserID    string
-	Email     string
-	IssuedAt  time.Time
-	ExpiresAt time.Time
-}
+type Claims struct{}
 
 // Token is an issued access token and its expiry.
-type Token struct {
-	AccessToken string
-	ExpiresAt   time.Time
-}
+type Token struct{}

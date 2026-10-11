@@ -21,3 +21,6 @@ go.work.sum
 
 # Claude Code local state
 .claude/settings.local.json
+
+# Stray build output
+/main

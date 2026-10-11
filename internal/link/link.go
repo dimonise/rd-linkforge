@@ -20,6 +20,8 @@ type Link struct {
 	CreatedAt time.Time
 }
 
+type Page struct{}
+
 func New(id uint64, target string) (Link, error) {
 	if target == "" {
 		return Link{}, ErrEmptyTarget
