@@ -15,9 +15,17 @@ const (
 )
 
 var (
-	ErrEmptyTarget       = errors.New("link: empty target")
-	ErrUnsupportedScheme = errors.New("link: unsupported scheme")
-	ErrInvalidCursor     = errors.New("link: invalid cursor")
+    ErrEmptyTarget       = errors.New("link: empty target")
+    ErrUnsupportedScheme = errors.New("link: unsupported scheme")
+    ErrNotFound          = errors.New("link: not found")
+    ErrAliasTaken        = errors.New("link: alias already taken")
+    ErrInvalidAlias      = errors.New("link: invalid alias")
+    ErrReservedAlias     = errors.New("link: reserved alias")
+    ErrForbidden         = errors.New("link: forbidden")
+    ErrExpired           = errors.New("link: expired")
+    ErrInvalidExpiry     = errors.New("link: invalid expiry")
+    ErrEmptyOwner        = errors.New("link: owner is required")
+    ErrInvalidCursor     = errors.New("link: invalid cursor")
 )
 
 type Link struct {
