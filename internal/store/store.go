@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"errors"
 	"sort"
 
@@ -10,46 +11,117 @@ import (
 var ErrDuplicateID = errors.New("store: duplicate id")
 
 type Store struct {
-	byID map[uint64]link.Link
+	byID   map[uint64]link.Link
+	byCode map[string]uint64
 }
 
-func New() Store {
-	return Store{
-		byID: make(map[uint64]link.Link),
+var _ link.Store = (*Store)(nil)
+
+func New() *Store {
+	return &Store{
+		byID:   make(map[uint64]link.Link),
+		byCode: make(map[string]uint64),
 	}
 }
 
-func Add(store Store, link link.Link) error {
-	if _, exists := store.byID[link.ID]; exists {
-		return ErrDuplicateID
+func (s *Store) Create(ctx context.Context, l link.Link) (link.Link, error) {
+	if _, exists := s.byID[l.ID]; exists {
+		return link.Link{}, ErrDuplicateID
 	}
 
-	store.byID[link.ID] = link
+	if _, exists := s.byCode[l.Code]; exists {
+		return link.Link{}, link.ErrAliasTaken
+	}
 
-	return nil
+	s.byID[l.ID] = l
+	s.byCode[l.Code] = l.ID
+
+	return l, nil
 }
 
-func Get(store Store, id uint64) (link.Link, bool) {
-	l, ok := store.byID[id]
+func (s *Store) Get(id uint64) (link.Link, bool) {
+	l, ok := s.byID[id]
 	return l, ok
 }
 
-func All(store Store) []link.Link {
-	result := make([]link.Link, len(store.byID))
+func (s *Store) All() []link.Link {
+	ids := sortedIDs(s.byID)
+	result := make([]link.Link, 0, len(ids))
 
-	i := 0
-	for _, l := range store.byID {
-		result[i] = l
-		i++
+	for _, id := range ids {
+		result = append(result, s.byID[id])
 	}
-
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].ID < result[j].ID
-	})
 
 	return result
 }
 
-func Count(store Store) int {
-	return len(store.byID)
+func (s *Store) Count() int {
+	return len(s.byID)
+}
+
+func sortedIDs(m map[uint64]link.Link) []uint64 {
+	ids := make([]uint64, 0, len(m))
+
+	for id := range m {
+		ids = append(ids, id)
+	}
+
+	sort.Slice(ids, func(i, j int) bool {
+		return ids[i] < ids[j]
+	})
+
+	return ids
+}
+
+// Context передаем, т.к. он должен быть по контракту, но пока не используем
+func (s *Store) ByCode(_ context.Context, code string) (link.Link, error) {
+	id, exists := s.byCode[code]
+	if !exists {
+		return link.Link{}, link.ErrNotFound
+	}
+
+	return s.byID[id], nil
+}
+
+func (s *Store) ListByOwner(_ context.Context, ownerID string, page link.Page) ([]link.Link, error) {
+	page = page.Normalize()
+
+	afterID, err := page.AfterID()
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]link.Link, 0, page.Limit)
+
+	for _, id := range sortedIDs(s.byID) {
+		if id <= afterID {
+			continue
+		}
+
+		l := s.byID[id]
+
+		if l.OwnerID != ownerID {
+			continue
+		}
+
+		result = append(result, l)
+
+		if len(result) == page.Limit {
+			break
+		}
+	}
+
+	return result, nil
+}
+
+func (s *Store) Delete(_ context.Context, id uint64) error {
+	l, exists := s.byID[id]
+	if !exists {
+		return link.ErrNotFound
+	}
+
+	delete(s.byID, id)
+	delete(s.byCode, l.Code)
+
+	return nil
 }
