@@ -34,7 +34,7 @@ type Link struct {
 	Target     string
 	OwnerID    string
 	CreatedAt  time.Time
-	ExpiresdAt time.Time
+	ExpiresAt time.Time
 }
 
 type ShortenRequest struct {
