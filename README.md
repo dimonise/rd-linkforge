@@ -12,6 +12,22 @@ Run:
 
 go run ./cmd/linkforge https://example.com https://go.dev
 
+## Shortener Service
+
+The Shortener service provides operations for creating, resolving,
+listing, and deleting short links.
+
+It supports custom aliases, link expiration, and cursor-based pagination.
+Links are stored using the Store interface with an in-memory implementation.
+
+## Testing
+
+Run all tests:
+
+```bash
+go test ./...
+```
+
 ## Layout
 
 ```
