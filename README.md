@@ -1,27 +1,30 @@
 # Linkforge
 
-A URL shortener with real-time click analytics, built incrementally as the course project for **Golang for developers**.
+Linkforge is a URL shortener project written in Go.
 
-The design is specified in the project TDD; this repository is the skeleton it describes.
+It currently supports Base62 encoding and decoding, link creation and validation, and in-memory storage.
 
-## Current state
+Build:
 
-**Skeleton only.** Every seam in the architecture exists as an interface with a Null Object implementation that satisfies it and does nothing. Nothing is wired together and no behaviour is implemented yet — each milestone replaces one set of `Noop*` types with real ones.
+go build ./...
 
-Each file declares exactly one interface alongside its no-op implementation, so the compile-time contract and its placeholder stay together. Types shared by several interfaces live in the package's `model.go`.
+Run:
+
+go run ./cmd/linkforge https://example.com https://go.dev
 
 ## Layout
 
 ```
-cmd/      linkforged        service binary — prints its version, nothing more
+cmd/      linkforge         demo binary — creates and prints shortened links
           linkctl           operator CLI   — prints its version, nothing more
 
 pkg/                        reusable libraries — a separate Go module
-  shortid/  Codec           base62 encode/decode                       M1
-            Generator       collision-resistant code issuing           M4
+  shortid/  Generator       collision-resistant code issuing           M4
   cache/    Cache[K,V]      bounded cache on the redirect hot path     M4
 
 internal/                   application code
+  base62/                   base62 encode/decode                       M1
+  store/                    in-memory link store                       M1
   link/     Store           link persistence, declared by its consumer M1 / M7
             Shortener       the domain service behind every transport  M2
   click/    Ingester        non-blocking submission from the hot path  M5

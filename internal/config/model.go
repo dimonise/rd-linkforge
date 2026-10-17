@@ -2,20 +2,5 @@
 // is environment-only and validated at startup.
 package config
 
-import "time"
-
 // Config is the fully resolved runtime configuration.
-type Config struct {
-	HTTPAddr  string
-	AdminAddr string
-	TCPAddr   string
-
-	PostgresDSN string
-	MongoURI    string
-
-	JWTSecret   string
-	TokenTTL    time.Duration
-	CacheSize   int
-	LogLevel    string
-	ShutdownTTL time.Duration
-}
+type Config struct{}

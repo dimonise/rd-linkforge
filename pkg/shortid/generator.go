@@ -1,3 +1,4 @@
+// Package shortid issues the short codes used in short URLs.
 package shortid
 
 // Generator issues fresh short codes. Implementations put a counter in the low
