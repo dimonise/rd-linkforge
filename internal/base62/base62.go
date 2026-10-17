@@ -2,6 +2,7 @@ package base62
 
 import (
 	"errors"
+	"math"
 	"strings"
 )
 
@@ -48,6 +49,14 @@ func EncodeWidth(val uint64, width int) string {
 	return strings.Repeat("0", width-len(encoded)) + encoded
 }
 
+func EncodeRecursive(val uint64) string {
+	if val < 62 {
+		return string(alphabet[val])
+	}
+
+	return EncodeRecursive(val/62) + string(alphabet[val%62])
+}
+
 // Декодим base62 строку обратно в uint64.
 // Если строка пустая, содержит недопустимые символы или слишком длинная, возвращаем ошибку
 func Decode(str string) (uint64, error) {
@@ -68,7 +77,14 @@ func Decode(str string) (uint64, error) {
 			return 0, ErrInvalidCharacter
 		}
 
-		result = result*62 + uint64(index)
+		digit := uint64(index)
+
+		if result > (math.MaxUint64-digit)/62 {
+			return 0, ErrOverflow
+		}
+
+		result = result*62 + digit
+
 	}
 
 	return result, nil
