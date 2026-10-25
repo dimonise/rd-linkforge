@@ -94,3 +94,68 @@ Requires Go 1.25+. Linting uses [golangci-lint](https://golangci-lint.run) (`bre
 | M8 | 15–16 | `net/http` first, then a framework; REST and Swagger |
 | M9 | 17–19 | Validation, JWT and middleware, WebSockets |
 | M10 | 20–21 | Production hardening and project defence |
+
+## Configuration
+
+Linkforge reads configuration from environment variables.
+
+| Variable | Default | Description |
+|---|---|---|
+| `LF_HTTP_ADDR` | `:8080` | HTTP server address |
+| `LF_ADMIN_ADDR` | `127.0.0.1:6060` | Admin server address |
+| `LF_TCP_ADDR` | `:7070` | TCP server address |
+| `LF_PG_DSN` | Required | PostgreSQL connection string |
+| `LF_MONGO_URI` | Required | MongoDB connection URI |
+| `LF_JWT_SECRET` | Required | JWT secret (minimum 32 bytes) |
+| `LF_CACHE_SIZE` | `100000` | Cache size (positive integer) |
+| `LF_LOG_LEVEL` | `info` | Logging level: debug, info, warn, error |
+
+Configuration is validated at startup. Credentials are redacted in logs.
+
+## CLI usage
+
+The `linkctl` command supports `import`, `export`, `config`, and `version`.
+
+### Import links
+
+Create a text file `urls.txt`:
+
+```text
+https://example.com
+https://go.dev
+```
+
+Import the URLs into a JSON Lines database:
+
+```bash
+go run ./cmd/linkctl import -in urls.txt -db links.jsonl
+```
+
+Expected output:
+
+```text
+imported: 2
+skipped: 0
+```
+
+### Export links
+
+Export the saved links to CSV:
+
+```bash
+go run ./cmd/linkctl export -db links.jsonl -out links.csv
+```
+
+Or print CSV to standard output:
+
+```bash
+go run ./cmd/linkctl export -db links.jsonl
+```
+
+### Validate configuration
+
+```bash
+go run ./cmd/linkctl config
+```
+
+The command requires `LF_PG_DSN`, `LF_MONGO_URI`, and `LF_JWT_SECRET`.
