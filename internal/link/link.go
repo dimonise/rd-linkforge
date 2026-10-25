@@ -15,25 +15,25 @@ const (
 )
 
 var (
-    ErrEmptyTarget       = errors.New("link: empty target")
-    ErrUnsupportedScheme = errors.New("link: unsupported scheme")
-    ErrNotFound          = errors.New("link: not found")
-    ErrAliasTaken        = errors.New("link: alias already taken")
-    ErrInvalidAlias      = errors.New("link: invalid alias")
-    ErrReservedAlias     = errors.New("link: reserved alias")
-    ErrForbidden         = errors.New("link: forbidden")
-    ErrExpired           = errors.New("link: expired")
-    ErrInvalidExpiry     = errors.New("link: invalid expiry")
-    ErrEmptyOwner        = errors.New("link: owner is required")
-    ErrInvalidCursor     = errors.New("link: invalid cursor")
+	ErrEmptyTarget       = errors.New("link: empty target")
+	ErrUnsupportedScheme = errors.New("link: unsupported scheme")
+	ErrNotFound          = errors.New("link: not found")
+	ErrAliasTaken        = errors.New("link: alias already taken")
+	ErrInvalidAlias      = errors.New("link: invalid alias")
+	ErrReservedAlias     = errors.New("link: reserved alias")
+	ErrForbidden         = errors.New("link: forbidden")
+	ErrExpired           = errors.New("link: expired")
+	ErrInvalidExpiry     = errors.New("link: invalid expiry")
+	ErrEmptyOwner        = errors.New("link: owner is required")
+	ErrInvalidCursor     = errors.New("link: invalid cursor")
 )
 
 type Link struct {
-	ID         uint64
-	Code       string
-	Target     string
-	OwnerID    string
-	CreatedAt  time.Time
+	ID        uint64
+	Code      string
+	Target    string
+	OwnerID   string
+	CreatedAt time.Time
 	ExpiresAt time.Time
 }
 
@@ -68,7 +68,7 @@ func (p Page) AfterID() (uint64, error) {
 
 	id, err := base62.Decode(p.Cursor)
 	if err != nil {
-		return 0, fmt.Errorf("Decode cursor %q: %w", p.Cursor, ErrInvalidCursor)
+		return 0, fmt.Errorf("decode cursor %q: %w", p.Cursor, ErrInvalidCursor)
 	}
 
 	return id, nil
