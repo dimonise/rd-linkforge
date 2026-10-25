@@ -28,7 +28,7 @@ func WithClock(now func() time.Time) Option {
 
 func WithFirstID(id uint64) Option {
 	return func(s *Service) {
-		if id >= 1 {
+		if id > 0 {
 			s.nextID = id
 		}
 	}
