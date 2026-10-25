@@ -81,7 +81,7 @@ func (s *Store) ByCode(ctx context.Context, code string) (link.Link, error) {
 	if err := ctx.Err(); err != nil {
 		return link.Link{}, err
 	}
-	
+
 	id, exists := s.byCode[code]
 	if !exists {
 		return link.Link{}, link.ErrNotFound
