@@ -50,7 +50,9 @@ func (s *Service) Shorten(ctx context.Context, req ShortenRequest) (Link, error)
 		return Link{}, err
 	}
 
-	if !req.ExpiresAt.IsZero() && !req.ExpiresAt.After(s.now()) {
+	now := s.now()
+
+	if !req.ExpiresAt.IsZero() && !req.ExpiresAt.After(now) {
 		return Link{}, ErrInvalidExpiry
 	}
 
@@ -72,7 +74,7 @@ func (s *Service) Shorten(ctx context.Context, req ShortenRequest) (Link, error)
 
 	l.OwnerID = req.OwnerID
 	l.ExpiresAt = req.ExpiresAt
-	l.CreatedAt = s.now().UTC()
+	l.CreatedAt = now.UTC()
 
 	if req.Alias != "" {
 		l.Code = req.Alias
