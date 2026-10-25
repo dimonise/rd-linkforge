@@ -25,6 +25,10 @@ func New() *Store {
 }
 
 func (s *Store) Create(ctx context.Context, l link.Link) (link.Link, error) {
+	if err := ctx.Err(); err != nil {
+		return link.Link{}, err
+	}
+
 	if _, exists := s.byID[l.ID]; exists {
 		return link.Link{}, ErrDuplicateID
 	}
@@ -73,8 +77,11 @@ func sortedIDs(m map[uint64]link.Link) []uint64 {
 	return ids
 }
 
-// Context передаем, т.к. он должен быть по контракту, но пока не используем
-func (s *Store) ByCode(_ context.Context, code string) (link.Link, error) {
+func (s *Store) ByCode(ctx context.Context, code string) (link.Link, error) {
+	if err := ctx.Err(); err != nil {
+		return link.Link{}, err
+	}
+
 	id, exists := s.byCode[code]
 	if !exists {
 		return link.Link{}, link.ErrNotFound
@@ -83,7 +90,11 @@ func (s *Store) ByCode(_ context.Context, code string) (link.Link, error) {
 	return s.byID[id], nil
 }
 
-func (s *Store) ListByOwner(_ context.Context, ownerID string, page link.Page) ([]link.Link, error) {
+func (s *Store) ListByOwner(ctx context.Context, ownerID string, page link.Page) ([]link.Link, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	page = page.Normalize()
 
 	afterID, err := page.AfterID()
@@ -114,7 +125,11 @@ func (s *Store) ListByOwner(_ context.Context, ownerID string, page link.Page) (
 	return result, nil
 }
 
-func (s *Store) Delete(_ context.Context, id uint64) error {
+func (s *Store) Delete(ctx context.Context, id uint64) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	l, exists := s.byID[id]
 	if !exists {
 		return link.ErrNotFound
