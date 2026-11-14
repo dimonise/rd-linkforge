@@ -13,8 +13,6 @@ type entry[K comparable, V any] struct {
 	value V
 }
 
-// LRU is a least-recently-used cache.
-// It is safe for concurrent use.
 type LRU[K comparable, V any] struct {
 	mu       sync.Mutex
 	capacity int
@@ -24,7 +22,6 @@ type LRU[K comparable, V any] struct {
 
 var _ Cache[string, int] = (*LRU[string, int])(nil)
 
-// NewLRU returns ErrInvalidCapacity when capacity is zero or negative.
 func NewLRU[K comparable, V any](capacity int) (*LRU[K, V], error) {
 	if capacity <= 0 {
 		return nil, ErrInvalidCapacity
@@ -87,8 +84,6 @@ func (c *LRU[K, V]) Len() int {
 	return c.order.Len()
 }
 
-// Keys returns keys from most recently used to least recently used.
-// It does not change the order.
 func (c *LRU[K, V]) Keys() []K {
 	c.mu.Lock()
 	defer c.mu.Unlock()
