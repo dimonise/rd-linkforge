@@ -35,8 +35,12 @@ cmd/      linkforge         demo binary — creates and prints shortened links
           linkctl           operator CLI   — prints its version, nothing more
 
 pkg/                        reusable libraries — a separate Go module
-  shortid/  Generator       collision-resistant code issuing           M4
-  cache/    Cache[K,V]      bounded cache on the redirect hot path     M4
+  shortid/  Generator       code generator interface                    M4
+            CodeGenerator   6-character random Base62 codes            M4
+  cache/    Cache[K,V]      generic cache interface                     M4
+            LRU[K,V]        least-recently-used cache                   M4
+  trie/     Trie            prefix tree for autocomplete               M4
+  topk/     TopK            top-N ranking using a min-heap             M4
 
 internal/                   application code
   base62/                   base62 encode/decode                       M1
@@ -159,3 +163,34 @@ go run ./cmd/linkctl config
 ```
 
 The command requires `LF_PG_DSN`, `LF_MONGO_URI`, and `LF_JWT_SECRET`.
+
+
+## Complexity
+
+| Structure | Operation | Average | Worst |
+|-----------|-----------|---------|-------|
+| LRU | Get | O(1) | O(n) |
+| LRU | Put | O(1) | O(n) |
+| Trie | Insert | O(L) | O(L) |
+| Trie | WithPrefix | O(L + k × M) | O(L + n × M) |
+| TopK | Add | O(log N) | O(log N) |
+| TopK | Result | O(N log N) | O(N log N) |
+
+Here, n is the number of stored elements, L is the word or prefix length, k is the number of returned words, M is the maximum length of a returned suffix, and N is the heap capacity.
+
+LRU.Get remains O(1) on average because the map provides direct access to the list element. The doubly linked list allows moving that element to the front in constant time without searching or shifting elements.
+
+## Benchmarks
+
+Environment: Windows, amd64, Intel Core i5-12400F.
+
+| Benchmark | Time | Memory | Allocations |
+|-----------|------|--------|-------------|
+| BenchmarkLRUGetHit | 11.06 ns/op | 0 B/op | 0 allocs/op |
+| BenchmarkTrieWithPrefix | 12699 ns/op | 680 B/op | 17 allocs/op |
+
+The LRU cache hit requires no heap allocations, while trie prefix search allocates memory for the resulting words.
+
+Command:
+
+`go test ./pkg/cache ./pkg/trie -run=none -bench=Benchmark -benchmem -count=1`
