@@ -12,6 +12,7 @@ import (
 
 type Service struct {
 	store  Store
+	cache  Cache
 	now    func() time.Time
 	nextID uint64
 }
@@ -19,6 +20,18 @@ type Service struct {
 var _ Shortener = (*Service)(nil)
 
 type Option func(*Service)
+
+type Cache interface {
+	Get(code string) (Link, bool)
+	Put(code string, l Link)
+	Delete(code string)
+}
+
+func WithCache(c Cache) Option {
+	return func(s *Service) {
+		s.cache = c
+	}
+}
 
 func WithClock(now func() time.Time) Option {
 	return func(s *Service) {
@@ -134,10 +147,23 @@ func (s *Service) Resolve(ctx context.Context, code string) (Link, error) {
 		return Link{}, err
 	}
 
-	l, err := s.store.ByCode(ctx, code)
+	var l Link
+	var ok bool
 
-	if err != nil {
-		return Link{}, fmt.Errorf("resolve link: %w", err)
+	if s.cache != nil {
+		l, ok = s.cache.Get(code)
+	}
+
+	if !ok {
+		var err error
+		l, err = s.store.ByCode(ctx, code)
+		if err != nil {
+			return Link{}, fmt.Errorf("resolve link: %w", err)
+		}
+
+		if s.cache != nil {
+			s.cache.Put(code, l)
+		}
 	}
 
 	if !l.ExpiresAt.IsZero() && !s.now().Before(l.ExpiresAt) {
@@ -180,6 +206,10 @@ func (s *Service) Delete(ctx context.Context, ownerID, code string) error {
 
 	if err := s.store.Delete(ctx, l.ID); err != nil {
 		return fmt.Errorf("delete link: %w", err)
+	}
+
+	if s.cache != nil {
+		s.cache.Delete(code)
 	}
 
 	return nil
