@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/skskuzan/rd-linkforge/internal/linkio"
 )
@@ -26,7 +27,7 @@ func runExport(
 		return 2
 	}
 
-	if *dbPath == "" || flags.NArg() != 0 {
+	if strings.TrimSpace(*dbPath) == "" || flags.NArg() != 0 {
 		fmt.Fprintln(stderr, "usage: linkctl export -db FILE [-out FILE]")
 		return 2
 	}
@@ -47,7 +48,7 @@ func runExport(
 		return 1
 	}
 
-	if *outPath == "" {
+	if strings.TrimSpace(*outPath) == "" {
 		if err := linkio.WriteCSV(stdout, links); err != nil {
 			fmt.Fprintf(stderr, "export CSV: %v\n", err)
 			return 1

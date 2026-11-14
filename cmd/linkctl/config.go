@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"log/slog"
@@ -16,7 +17,13 @@ func runConfig(
 	stdout, stderr io.Writer,
 	logger *slog.Logger,
 ) int {
-	if len(args) != 0 {
+	flags := flag.NewFlagSet("config", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+
+	if err := flags.Parse(args); err != nil {
+		return 2
+	}
+	if flags.NArg() != 0 {
 		fmt.Fprintln(stderr, "usage: linkctl config")
 		return 2
 	}

@@ -226,9 +226,12 @@ func TestRunUsageErrors(t *testing.T) {
 		{"import missing flags", []string{"import"}},
 		{"import missing db", []string{"import", "-in", "urls.txt"}},
 		{"export missing db", []string{"export"}},
+		{"export blank db", []string{"export", "-db", "  "}},
 		{"unknown import flag", []string{"import", "-unknown"}},
 		{"unknown export flag", []string{"export", "-unknown"}},
 		{"config extra argument", []string{"config", "extra"}},
+		{"unknown config flag", []string{"config", "-unknown"}},
+		{"unknown version flag", []string{"version", "-unknown"}},
 		{"version extra argument", []string{"version", "extra"}},
 	}
 
@@ -400,5 +403,17 @@ func TestRunExportMissingDatabase(t *testing.T) {
 
 	if !strings.Contains(stderr.String(), db) {
 		t.Errorf("error should contain database path: %s", stderr.String())
+	}
+}
+
+func TestRunCanceledImportInvalidArgs(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	var stdout, stderr bytes.Buffer
+	code := run(ctx, []string{"import"}, testLookup(nil), &stdout, &stderr)
+
+	if code != 2 {
+		t.Errorf("exit code = %d, want 2; stderr = %s", code, stderr.String())
 	}
 }

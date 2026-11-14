@@ -70,6 +70,13 @@ func TestEnvLoaderValidation(t *testing.T) {
 				t.Fatalf("Load() error = %v, want %v", err, tt.wantErr)
 			}
 
+			for _, key := range []string{"LF_PG_DSN", "LF_MONGO_URI", "LF_JWT_SECRET"} {
+				secret := strings.TrimSpace(env[key])
+				if secret != "" && strings.Contains(err.Error(), secret) {
+					t.Errorf("Load() error leaks %s", key)
+				}
+			}
+
 			if cfg != (Config{}) {
 				t.Errorf("Load() returned non-zero config: %+v", cfg)
 			}

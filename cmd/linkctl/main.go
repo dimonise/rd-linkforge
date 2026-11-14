@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"log/slog"
@@ -36,11 +37,6 @@ func run(
 	env func(string) (string, bool),
 	stdout, stderr io.Writer,
 ) int {
-	if err := ctx.Err(); err != nil {
-		fmt.Fprintln(stderr, err)
-		return 1
-	}
-
 	level := slog.LevelInfo
 
 	if value, ok := env("LF_LOG_LEVEL"); ok && strings.TrimSpace(value) != "" {
@@ -73,7 +69,13 @@ func run(
 		return runConfig(ctx, args[1:], env, stdout, stderr, logger)
 
 	case "version":
-		if len(args) != 1 {
+		flags := flag.NewFlagSet("version", flag.ContinueOnError)
+		flags.SetOutput(stderr)
+
+		if err := flags.Parse(args[1:]); err != nil {
+			return 2
+		}
+		if flags.NArg() != 0 {
 			printUsage(stderr)
 			return 2
 		}
