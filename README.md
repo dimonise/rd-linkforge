@@ -194,3 +194,13 @@ The LRU cache hit requires no heap allocations, while trie prefix search allocat
 Command:
 
 `go test ./pkg/cache ./pkg/trie -run=none -bench=Benchmark -benchmem -count=1`
+
+## Concurrency
+
+The Counters data is owned by a single goroutine, which processes requests received through a channel.
+Other goroutines communicate with the owner by sending batches and queries through this channel.
+Pipeline uses sync.RWMutex to protect its lifecycle state and prevent sending to a closed queue.
+Submit uses a read lock because multiple submissions can happen concurrently without changing the lifecycle state.
+Shutdown obtains the write lock, stops accepting clicks, and closes the queue.
+Workers drain the remaining clicks, flush their batches to the store, and then exit.
+Shutdown waits for all workers to finish or cancels the pipeline context when its deadline expires.
