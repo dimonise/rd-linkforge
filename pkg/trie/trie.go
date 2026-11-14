@@ -5,8 +5,6 @@ type node struct {
 	word     bool
 }
 
-// Trie is a byte-based prefix tree.
-// It is not safe for concurrent use.
 type Trie struct {
 	root *node
 }
