@@ -2,15 +2,13 @@
 
 Linkforge is a URL shortener project written in Go.
 
-It currently supports Base62 encoding and decoding, link creation and validation, and in-memory storage.
+It supports Base62 encoding and decoding, link creation and validation, in-memory storage, caching, click analytics, a TCP resolver, and an operator CLI.
 
 Build:
 
+```bash
 go build ./...
-
-Run:
-
-go run ./cmd/linkforge https://example.com https://go.dev
+```
 
 ## Shortener Service
 
@@ -20,6 +18,8 @@ listing, and deleting short links.
 It supports custom aliases, link expiration, and cursor-based pagination.
 Links are stored using the Store interface with an in-memory implementation.
 
+The resolver service uses a concurrency-safe LRU cache to reduce storage lookups.
+
 ## Testing
 
 Run all tests:
@@ -28,17 +28,25 @@ Run all tests:
 go test ./...
 ```
 
+Run race detection:
+
+```bash
+go test -race ./...
+```
+
 ## Layout
 
 ```
-cmd/      linkforge         demo binary — creates and prints shortened links
-          linkctl           operator CLI   — prints its version, nothing more
+cmd/
+  linkforged/               TCP resolver service                        M6
+  linkctl/                  operator CLI: import, export, config,       M3 / M6
+                            version, resolve
 
 pkg/                        reusable libraries — a separate Go module
   shortid/  Generator       code generator interface                    M4
             CodeGenerator   6-character random Base62 codes            M4
   cache/    Cache[K,V]      generic cache interface                     M4
-            LRU[K,V]        least-recently-used cache                   M4
+            LRU[K,V]        concurrency-safe least-recently-used cache M4 / M5
   trie/     Trie            prefix tree for autocomplete               M4
   topk/     TopK            top-N ranking using a min-heap             M4
 
@@ -47,6 +55,7 @@ internal/                   application code
   store/                    in-memory link store                       M1
   link/     Store           link persistence, declared by its consumer M1 / M7
             Shortener       the domain service behind every transport  M2
+  linkio/                   JSONL and CSV import/export                 M3
   click/    Ingester        non-blocking submission from the hot path  M5
             Store           append-only raw event persistence          M7
             Aggregator      time series and top-N queries              M5
@@ -54,9 +63,14 @@ internal/                   application code
   auth/     Issuer          access token minting                       M9
             Verifier        token validation for middleware            M9
             UserStore       account persistence                        M7
-  transport/Server          uniform listener lifecycle                 M6 / M8
+  transport/
+            Server          uniform listener lifecycle                 M6 / M8
+    tcp/                    concurrent TCP resolver                    M6
   config/   Loader          environment-only configuration             M3
   observability/Metrics     counters and histograms                    M10
+
+Dockerfile                  multi-stage non-root Docker image          M6
+.dockerignore               Docker build context exclusions            M6
 ```
 
 The `pkg/` tree is a second module so that reusable libraries stay free of any dependency on application code; `go.work` ties the two together for local development.
@@ -118,7 +132,7 @@ Configuration is validated at startup. Credentials are redacted in logs.
 
 ## CLI usage
 
-The `linkctl` command supports `import`, `export`, `config`, and `version`.
+The `linkctl` command supports `import`, `export`, `config`, `version`, and `resolve`.
 
 ### Import links
 
@@ -164,6 +178,24 @@ go run ./cmd/linkctl config
 
 The command requires `LF_PG_DSN`, `LF_MONGO_URI`, and `LF_JWT_SECRET`.
 
+## TCP resolver and Docker
+
+| Request | Response |
+|---|---|
+| `PING` | `PONG` |
+| `RESOLVE <code>` | `OK <target URL>` or `ERR not_found` |
+| `QUIT` | No response; connection closes |
+
+Import: `go run ./cmd/linkctl import -in urls.txt -db links.jsonl`
+
+Build: `docker build -t linkforged .`
+
+Run: `docker run --rm -p 7070:7070 -v "$PWD/links.jsonl:/data/links.jsonl:ro" -e LF_PG_DSN=unused -e LF_MONGO_URI=unused -e LF_JWT_SECRET=0123456789abcdef0123456789abcdef linkforged -db /data/links.jsonl`
+
+Resolve: `go run ./cmd/linkctl resolve 000001`
+
+`docker stop` sends SIGTERM directly to linkforged. The server stops accepting new connections and wakes idle clients.
+Commands already being processed finish before shutdown. If the shutdown deadline expires, remaining connections are closed.
 
 ## Complexity
 
@@ -204,3 +236,8 @@ Submit uses a read lock because multiple submissions can happen concurrently wit
 Shutdown obtains the write lock, stops accepting clicks, and closes the queue.
 Workers drain the remaining clicks, flush their batches to the store, and then exit.
 Shutdown waits for all workers to finish or cancels the pipeline context when its deadline expires.
+
+The TCP resolver handles each client connection in a separate goroutine.
+A mutex protects connection tracking and coordinates graceful shutdown.
+Idle connections have read deadlines, while active commands are allowed to finish.
+The resolver uses the concurrency-safe LRU cache for repeated link lookups.
