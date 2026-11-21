@@ -10,6 +10,8 @@ import (
 
 var ErrDuplicateID = errors.New("store: duplicate id")
 
+// Store supports concurrent reads when Create and Delete are not running.
+// Create and Delete are not safe for concurrent use.
 type Store struct {
 	byID   map[uint64]link.Link
 	byCode map[string]uint64

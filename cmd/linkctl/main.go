@@ -82,6 +82,8 @@ func run(
 
 		fmt.Fprintf(stdout, "linkctl %s\n", version)
 		return 0
+	case "resolve":
+		return runResolve(ctx, args[1:], stdout, stderr)
 
 	default:
 		printUsage(stderr)
@@ -90,5 +92,5 @@ func run(
 }
 
 func printUsage(w io.Writer) {
-	fmt.Fprintln(w, "usage: linkctl <import|export|config|version>")
+	fmt.Fprintln(w, "usage: linkctl <import|export|config|version|resolve>")
 }
