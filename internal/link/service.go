@@ -10,6 +10,8 @@ import (
 	"github.com/skskuzan/rd-linkforge/internal/base62"
 )
 
+// Service supports concurrent Resolve calls if Shorten and Delete are not running.
+// Shorten and Delete are not safe for concurrent use.
 type Service struct {
 	store  Store
 	cache  Cache

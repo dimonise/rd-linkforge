@@ -22,12 +22,15 @@ var (
 	errLineTooLong = errors.New("tcp: line too long")
 )
 
+// Resolver implementations must support concurrent Resolve calls.
 type Resolver interface {
 	Resolve(ctx context.Context, code string) (link.Link, error)
 }
 
+// Option configures a server during construction and is not concurrency-safe.
 type Option func(*Server)
 
+// Server is safe for concurrent use.
 type Server struct {
 	addr        string
 	actualAddr  string
