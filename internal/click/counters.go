@@ -16,6 +16,8 @@ var (
 	ErrClosed             = errors.New("click: counters are closed")
 )
 
+// Counters aggregates click statistics using an internal goroutine.
+// It is safe for concurrent use.
 type Counters struct {
 	requests chan func(map[string]map[time.Time]int64)
 	done     chan struct{}
@@ -159,15 +161,14 @@ func (c *Counters) Top(ctx context.Context, w Window, n int) ([]Total, error) {
 	default:
 	}
 
+	ranking, err := topk.New(n)
+	if err != nil {
+		return nil, err
+	}
+
 	result := make(chan []Total, 1)
-	errResult := make(chan error, 1)
 
 	request := func(counts map[string]map[time.Time]int64) {
-		ranking, err := topk.New(n)
-		if err != nil {
-			errResult <- err
-			return
-		}
 
 		for code, hours := range counts {
 			var total int64
@@ -209,8 +210,6 @@ func (c *Counters) Top(ctx context.Context, w Window, n int) ([]Total, error) {
 		return nil, ctx.Err()
 	case <-c.done:
 		return nil, ErrClosed
-	case err := <-errResult:
-		return nil, err
 	case out := <-result:
 		return out, nil
 	}

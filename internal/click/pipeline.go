@@ -7,17 +7,25 @@ import (
 	"time"
 )
 
+// Metrics records Pipeline statistics.
+// Implementations must be safe for concurrent calls.
 type Metrics interface {
 	ObserveClickDropped()
 	SetQueueDepth(n int)
 }
 
+// BatchSink accepts batches emitted by Pipeline workers.
+// Implementations must be safe for concurrent calls.
 type BatchSink interface {
 	Add(batch []Click)
 }
 
+// PipelineOption configures a Pipeline during construction.
+// Options must not be applied concurrently to the same Pipeline.
 type PipelineOption func(*Pipeline)
 
+// Pipeline is an Ingester that queues clicks and stores them in batches
+// using worker goroutines. It is safe for concurrent use.
 type Pipeline struct {
 	store         Store
 	metrics       Metrics
@@ -129,23 +137,34 @@ func (p *Pipeline) Start() {
 
 func (p *Pipeline) Submit(c Click) bool {
 	p.mu.RLock()
-	defer p.mu.RUnlock()
 
 	if p.closed {
+		p.mu.RUnlock()
 		p.drop(1)
 		return false
 	}
+
+	queued := false
+	depth := 0
 
 	select {
 	case p.queue <- c:
+		queued = true
+		depth = len(p.queue)
+	default:
+	}
+
+	p.mu.RUnlock()
+
+	if queued {
 		if p.metrics != nil {
-			p.metrics.SetQueueDepth(len(p.queue))
+			p.metrics.SetQueueDepth(depth)
 		}
 		return true
-	default:
-		p.drop(1)
-		return false
 	}
+
+	p.drop(1)
+	return false
 }
 
 func (p *Pipeline) drop(n int) {
