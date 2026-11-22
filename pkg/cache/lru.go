@@ -13,6 +13,8 @@ type entry[K comparable, V any] struct {
 	value V
 }
 
+// LRU is a fixed-capacity least-recently-used cache.
+// It is safe for concurrent use.
 type LRU[K comparable, V any] struct {
 	mu       sync.Mutex
 	capacity int
